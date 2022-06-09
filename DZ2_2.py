@@ -1,62 +1,86 @@
 import numpy as np
+import cv2 as cv
 
-import math
+video = cv.VideoCapture('Video.mp4')
+fourcc = cv.VideoWriter_fourcc(*'XVID')
+path = 'New_video.avi'
+video_writer = cv.VideoWriter(path, fourcc, 25.0, (1280, 720))
+video.set(cv.CAP_PROP_POS_MSEC, 3737000)
+success, first_frame = video.read()
 
-import cv2
-points = []
-framesize = (int(video.get(3)), int(video.get(4)))
-matrix = None
-select:bool = False
-firstRead:bool = True
-video = cv2.VideoCapture("/Video.mp4")
-
-def distance (a, b): return math.sqrt ((math.pow(a[0] -b[0], 2) + (math.pow(a[1] - b[1], 2))))
-
-def drawcircle (event, x,y, flags, param):
-    global select, matrix
-    if len(points) == 4:
-        width = distance(points[0], points[1])
-        height = distance(points[1], points[3])
-
-    pts1 = np.float32 ([[points[0]], [points[1]], [points[2]], [points[3]]])
-
-    pts2 = np.float32 ([[framesize[0]/2 - width / 2, framesize[1] /2 - height/2],
-                   [framesize[0]/2 - width / 2, framesize[1] /2 - height/2],
-                    [framesize[0]/2 - width / 2, framesize[1] /2 + height/2],
-                    [framesize[0]/2 - width / 2, framesize[1] /2 + height/2]
-                   ])
-    matrix = cv2.getPerspectiveTransform(pts1,pts2)
-    select = True
-    return
+width = int(first_frame.shape[1])
+height = int(first_frame.shape[0])
+dim = (width, height)
 
 
+def draw_circle(event, x, y, flags, param):
+    global mouse_x, mouse_y, print_status, p
+    if event == cv.EVENT_LBUTTONDBLCLK:
+        cv.circle(first_frame, (x, y), 3, (255, 255, 0), -1)
+        mouse_x, mouse_y = x, y
+        p += 1
+        print_status = True
 
-    if event == cv2.EVENT_LBUTTONDBLCLK:
-        cv2.circle(img, (x,y),2,(255,0,0), -1)
-        points.appemd((x,y))
 
-cv2.namedWindow('Show')
-cv2.setMouseCallback('Show',drawcircle)
+global p
+p = 0
+f = 0
+cv.imshow('first_frame', first_frame)
+cv.setMouseCallback('first_frame', draw_circle)
 
+x1 = 0, 0
+x2 = 0, 0
+x3 = 0, 0
+x4 = 0, 0
+
+global print_status
+print_status = False
+
+while True:
+    cv.imshow('first_frame', first_frame)
+    k = cv.waitKey(20) & 0xFF
+    if p == 4 and f == 1:
+        break
+    if p == 1:
+        x1 = mouse_x, mouse_y
+        if print_status:
+            print(x1)
+            print_status = False
+    if p == 2:
+        x2 = mouse_x, mouse_y
+        if print_status:
+            print(x2)
+            print_status = False
+    if p == 3:
+        x3 = mouse_x, mouse_y
+        if print_status:
+            print(x3)
+            print_status = False
+    if p == 4:
+        x4 = mouse_x, mouse_y
+        if print_status:
+            print(x4)
+            print_status = False
+        f = 1
+
+pts1 = np.float32([[x1], [x2], [x3], [x4]])
+pts2 = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
+matrix = cv.getPerspectiveTransform(pts1, pts2)
 
 while video.isOpened():
-    key = cv2.waitkey(2) & 0xFF
-    if firstRead:
-        res,img = video.read()
-        cv2.imshow("Show", img)
-        firstRead = False
+    ret, frame = video.read()
+    if ret:
+        frame = cv.warpPerspective(frame, matrix, (width, height))
 
-    if select:
-        res, img = video.read()
-        if res:
-            imgOutput = cv2.warpPerspective(img, matrix, framesize)
-            cv2.imshow("Show", imgOutput)
-        else:
+        cv.imshow('video', frame)
+        video_writer.write(frame)
+        key = cv.waitKey(27)
+
+        if key == 27:
             break
 
-
-    if key == ord('q'):
+    else:
         break
 
-cv2.destroyAllWindows()
-
+video.release()
+cv.destroyAllWindows()
