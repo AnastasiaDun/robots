@@ -41,7 +41,7 @@ def add_noise(img):
 # salt-and-pepper noise can
 # be applied only to grayscale images
 # Reading the color image in grayscale image
-img = cv2.imread('\Image.jpg',
+img = cv2.imread('Image.jpg',
                  cv2.IMREAD_GRAYSCALE)
 
 # Storing the image
